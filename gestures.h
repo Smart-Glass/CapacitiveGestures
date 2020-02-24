@@ -3,13 +3,24 @@
 
 #include <CapacitiveSensor.h>
 
-#define MAX_SINGLE_GESTURES 2
+#define MAX_GESTURES 6
 
 /**
  * List of currently supported gestures
  */
-#define TAP         0
-#define LONGTAP     1
+
+/**
+ * Single sensor gesture
+ */
+#define TAP         0x0
+#define LONGTAP     0x1
+/**
+ * Multi sensor gestures
+ */
+#define SWIPE_LEFT  0x2
+#define SWIPE_RIGHT 0x3
+#define SWIPE_UP    0x4
+#define SWIPE_DOWN  0x5
 
 /**
  * Classifes gestures into their own buckets while keeping track of metadeta
@@ -21,10 +32,17 @@ class Gesture {
 
 		Gesture(){}
 
-		Gesture(long start, bool gest_init):
+		Gesture(int id):
+			id(id),
+			start_time(0),
+			gesture_initiated(false) {}
+
+		Gesture(int id, long start, bool gest_init):
+			id(id),
 			start_time(start),
 			gesture_initiated(gest_init) {}
 
+		int id;
 		long start_time;
 		bool gesture_initiated;
 };
@@ -52,17 +70,18 @@ class Sensor: public CapacitiveSensor, public Gesture {
 		*/
 		Sensor(uint8_t sendPin, uint8_t recvPin, int sensMax = 4000,
 				int sensMin = 400):
-				sens_max(sensMax), sens_min(sensMin),
+				sens_max(sensMax),
+				sens_min(sensMin),
 				CapacitiveSensor(sendPin,recvPin) {
-			for (int i = 0; i < MAX_SINGLE_GESTURES; i++) {
-				gesture[i] = Gesture(0, false);
+			for (int i = 0; i < MAX_GESTURES; i++) {
+				gesture[i] = Gesture(i);
 			}
 		}
 
 		long sens_val;
 		int sens_max;
 		int sens_min;
-		Gesture gesture[MAX_SINGLE_GESTURES];
+		Gesture gesture[MAX_GESTURES];
 		bool tap(int, int);
 		bool longTap(int, int);
 
@@ -70,5 +89,4 @@ class Sensor: public CapacitiveSensor, public Gesture {
 		/* Single sensor gestures embedded in the class */
 		bool detectTap(int, int, int);
 };
-
 #endif

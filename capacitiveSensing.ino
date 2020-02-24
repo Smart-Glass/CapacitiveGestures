@@ -1,6 +1,18 @@
 #include "gestures.h"
 
 /**
+  * Design of the sensor => Gesture detection will be tailored for it
+  ------------------------------
+  |             4              |
+  ------------------------------
+  |   0  |   1   |  2   |  3   |
+  ------------------------------
+  |             5              |
+  ------------------------------
+ */
+
+
+/**
  * Generic function to detect a tap based gesture
  * Has paramters to tune time based on preference
  */
@@ -36,11 +48,100 @@ Sensor::longTap(int start_thresh=1000, int end_thresh=2000) {
 	return detectTap(start_thresh, end_thresh, LONGTAP);
 }
 
+bool detectHorizontalSwipe(Sensor *sensor, int swipe) {
+  // Check for initialization only from sensors 0 and 1
+  int sens1_idx = 0;
+  int sens2_idx = 1;
+  int sens3_idx = 3;
+
+  if (swipe == SWIPE_RIGHT) {
+    sens1_idx = 3;
+    sens2_idx = 2;
+    sens3_idx = 0;
+  }
+  int idx = sens1_idx;
+
+  if (!sensor[sens1_idx].gesture[swipe].gesture_initiated &&
+      !sensor[sens2_idx].gesture[swipe].gesture_initiated){
+    if (sensor[sens1_idx].sens_val < sensor[sens2_idx].sens_val) {
+      idx = sens2_idx;
+    }
+    if (sensor[idx].sens_val < sensor[idx].sens_min)
+      return false;
+    if (sensor[idx].sens_val > sensor[idx].sens_max) {
+      sensor[idx].gesture[swipe].gesture_initiated = true;
+      sensor[idx].gesture[swipe].start_time = millis();
+    }
+  } else {
+    if (sensor[sens2_idx].gesture[swipe].gesture_initiated)
+      idx = sens2_idx;
+    // Took too much time for gesture to complete. Bail out
+    if (millis () - sensor[idx].gesture[swipe].start_time > 1000) {
+      sensor[idx].gesture[swipe].gesture_initiated = false;
+      return false;
+    }
+    if (sensor[idx].sens_val < sensor[idx].sens_min &&
+        sensor[sens3_idx].sens_val > sensor[sens3_idx].sens_max) {
+      sensor[idx].gesture[swipe].gesture_initiated = false;
+      return true;
+    }
+  }
+  return false;
+}
+
+bool detectVerticalSwipe(Sensor *sensor, int swipe) {
+  int idx = 4;
+  int idx1 = 5;
+  if (swipe == SWIPE_UP) {
+    idx = 5;
+    idx1 = 4;
+  }
+  if (!sensor[idx].gesture[swipe].gesture_initiated) {
+    if (sensor[idx].sens_val < sensor[idx].sens_max)
+      return false;
+    sensor[idx].gesture[swipe].gesture_initiated = true;
+    sensor[idx].gesture[swipe].start_time = millis();
+  } else {
+    if (millis () - sensor[idx].gesture[swipe].start_time > 1000) {
+      sensor[idx].gesture[swipe].gesture_initiated = false;
+      return false;
+    }
+    if (sensor[idx].sens_val < sensor[idx].sens_min &&
+        sensor[idx1].sens_val > sensor[idx].sens_max) {
+      sensor[idx].gesture[swipe].gesture_initiated = false;
+      return true;
+    }
+  }
+  return false;
+}
+
+bool swipeLeft(Sensor *sensor) {
+  return detectHorizontalSwipe(sensor, SWIPE_LEFT);
+}
+
+bool swipeRight(Sensor *sensor) {
+  return detectHorizontalSwipe(sensor, SWIPE_RIGHT);
+}
+
+bool swipeUP(Sensor *sensor) {
+  return detectVerticalSwipe(sensor, SWIPE_UP);
+}
+
+bool swipeDown(Sensor *sensor) {
+  return detectVerticalSwipe(sensor, SWIPE_DOWN);
+}
+
+
 /**
- * Initialize the sensors
+ * Initialize the sensors - Fictional numbers
  */
 Sensor sensor[] = {
-	Sensor(4,2)
+	Sensor(4,2),
+  Sensor(6,4),
+  Sensor(8,6),
+  Sensor(10,8),
+  Sensor(12,10),
+  Sensor(14,10),
 };
 
 int size = (sizeof(sensor)/sizeof(*sensor));
@@ -52,12 +153,17 @@ void setup()
 
 void loop()
 {
-	sensor[0].sens_val = sensor[0].capacitiveSensor(30);
+	for (int i = 0; i < size; i++)
+    sensor[i].sens_val = sensor[i].capacitiveSensor(30);
 
 	for (int i=0; i < size; i++){
-		if (sensor[i].tap())
+    if (sensor[i].tap())
 			Serial.println("Tap detected");
 		 else if (sensor[i].longTap())
 			 Serial.println("longTap detected");
 	}
+  if (swipeUP(sensor))
+    Serial.println("SwipeUp detected");
+  else if (swipeDown(sensor))
+    Serial.println("SwipeDown detected");
 }
