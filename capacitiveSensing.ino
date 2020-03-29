@@ -48,7 +48,9 @@ Sensor::longTap(int start_thresh=1000, int end_thresh=2000) {
 	return detectTap(start_thresh, end_thresh, LONGTAP);
 }
 
-bool detectHorizontalSwipe(Sensor *sensor, int swipe) {
+bool
+detectHorizontalSwipe(Sensor *sensor, int swipe, int start_thresh=200,
+                      int end_thresh=1000) {
   // Check for initialization only from sensors 0 and 1
   int sens1_idx = 0;
   int sens2_idx = 1;
@@ -75,8 +77,9 @@ bool detectHorizontalSwipe(Sensor *sensor, int swipe) {
   } else {
     if (sensor[sens2_idx].gesture[swipe].gesture_initiated)
       idx = sens2_idx;
-    // Took too much time for gesture to complete. Bail out
-    if (millis () - sensor[idx].gesture[swipe].start_time > 1000) {
+    // Took too much / too little time for gesture to complete. Bail out
+    if (millis() - sensor[idx].gesture[swipe].start_time > end_thresh ||
+        millis() - sensor[idx].gesture[swipe].start_time < start_thresh) {
       sensor[idx].gesture[swipe].gesture_initiated = false;
       return false;
     }
@@ -89,7 +92,9 @@ bool detectHorizontalSwipe(Sensor *sensor, int swipe) {
   return false;
 }
 
-bool detectVerticalSwipe(Sensor *sensor, int swipe) {
+bool
+detectVerticalSwipe(Sensor *sensor, int swipe, int start_thresh=200,
+                    int end_thresh=1000) {
   int idx = 4;
   int idx1 = 5;
   if (swipe == SWIPE_UP) {
@@ -102,7 +107,9 @@ bool detectVerticalSwipe(Sensor *sensor, int swipe) {
     sensor[idx].gesture[swipe].gesture_initiated = true;
     sensor[idx].gesture[swipe].start_time = millis();
   } else {
-    if (millis () - sensor[idx].gesture[swipe].start_time > 1000) {
+    // Took too much / too little time for gesture to complete. Bail out
+    if (millis() - sensor[idx].gesture[swipe].start_time > end_thresh ||
+        millis() - sensor[idx].gesture[swipe].start_time < start_thresh) {
       sensor[idx].gesture[swipe].gesture_initiated = false;
       return false;
     }
@@ -115,20 +122,20 @@ bool detectVerticalSwipe(Sensor *sensor, int swipe) {
   return false;
 }
 
-bool swipeLeft(Sensor *sensor) {
-  return detectHorizontalSwipe(sensor, SWIPE_LEFT);
+bool swipeLeft(Sensor *sensor, int start_thresh=200, int end_thresh=1000) {
+  return detectHorizontalSwipe(sensor, SWIPE_LEFT, start_thresh, end_thresh);
 }
 
-bool swipeRight(Sensor *sensor) {
-  return detectHorizontalSwipe(sensor, SWIPE_RIGHT);
+bool swipeRight(Sensor *sensor, int start_thresh=200, int end_thresh=1000) {
+  return detectHorizontalSwipe(sensor, SWIPE_RIGHT, start_thresh, end_thresh);
 }
 
-bool swipeUP(Sensor *sensor) {
-  return detectVerticalSwipe(sensor, SWIPE_UP);
+bool swipeUP(Sensor *sensor, int start_thresh=200, int end_thresh=1000) {
+  return detectVerticalSwipe(sensor, SWIPE_UP, start_thresh, end_thresh);
 }
 
-bool swipeDown(Sensor *sensor) {
-  return detectVerticalSwipe(sensor, SWIPE_DOWN);
+bool swipeDown(Sensor *sensor, int start_thresh=200, int end_thresh=1000) {
+  return detectVerticalSwipe(sensor, SWIPE_DOWN, start_thresh, end_thresh);
 }
 
 
@@ -166,4 +173,8 @@ void loop()
     Serial.println("SwipeUp detected");
   else if (swipeDown(sensor))
     Serial.println("SwipeDown detected");
+  else if (swipeLeft(sensor))
+    Serial.println("SwipeLeft detected");
+  else if (swipeRight(sensor))
+    Serial.println("SwipeRight detected");
 }
