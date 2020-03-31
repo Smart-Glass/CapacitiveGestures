@@ -36,7 +36,7 @@ Sensor::detectTap(int start_thresh=1000, int end_thresh=2000, int g_type=TAP) {
  * A regular tap
  */
 bool
-Sensor::tap(int start_thresh=500, int end_thresh=1000) {
+Sensor::tap(int start_thresh=20, int end_thresh=100) {
 	return detectTap(start_thresh, end_thresh, TAP);
 }
 
@@ -44,13 +44,13 @@ Sensor::tap(int start_thresh=500, int end_thresh=1000) {
  * Longer than a regular tap
  */
 bool
-Sensor::longTap(int start_thresh=1000, int end_thresh=2000) {
+Sensor::longTap(int start_thresh=350, int end_thresh=1000) {
 	return detectTap(start_thresh, end_thresh, LONGTAP);
 }
 
 bool
-detectHorizontalSwipe(Sensor *sensor, int swipe, int start_thresh=200,
-                      int end_thresh=1000) {
+detectHorizontalSwipe(Sensor *sensor, int swipe, int start_thresh=50,
+                      int end_thresh=300) {
   // Check for initialization only from sensors 0 and 1
   int sens1_idx = 0;
   int sens2_idx = 1;
@@ -74,13 +74,22 @@ detectHorizontalSwipe(Sensor *sensor, int swipe, int start_thresh=200,
       sensor[idx].gesture[swipe].gesture_initiated = true;
       sensor[idx].gesture[swipe].start_time = millis();
     }
+    // Serial.print("BEFORE::Sensor");
+    // Serial.print(idx);
+    // Serial.print(" start_time:");
+    // Serial.println(sensor[idx].gesture[swipe].start_time);
   } else {
     if (sensor[sens2_idx].gesture[swipe].gesture_initiated)
       idx = sens2_idx;
+    else if (sensor[sens1_idx].gesture[swipe].gesture_initiated)
+      idx = sens1_idx;
+    else
+      return false;
     // Took too much / too little time for gesture to complete. Bail out
     if (millis() - sensor[idx].gesture[swipe].start_time > end_thresh ||
         millis() - sensor[idx].gesture[swipe].start_time < start_thresh) {
       sensor[idx].gesture[swipe].gesture_initiated = false;
+      // Serial.println("Bailing out. Time constraint");
       return false;
     }
     if (sensor[idx].sens_val < sensor[idx].sens_min &&
@@ -88,13 +97,17 @@ detectHorizontalSwipe(Sensor *sensor, int swipe, int start_thresh=200,
       sensor[idx].gesture[swipe].gesture_initiated = false;
       return true;
     }
+    // Serial.print("AFTER::Sensor");
+    // Serial.print(idx);
+    // Serial.print(" sen3_idx_val:");
+    // Serial.println(sensor[sens3_idx].sens_val);
   }
   return false;
 }
 
 bool
-detectVerticalSwipe(Sensor *sensor, int swipe, int start_thresh=200,
-                    int end_thresh=1000) {
+detectVerticalSwipe(Sensor *sensor, int swipe, int start_thresh=50,
+                    int end_thresh=300) {
   int idx = 4;
   int idx1 = 5;
   if (swipe == SWIPE_UP) {
@@ -122,7 +135,7 @@ detectVerticalSwipe(Sensor *sensor, int swipe, int start_thresh=200,
   return false;
 }
 
-bool swipeLeft(Sensor *sensor, int start_thresh=200, int end_thresh=1000) {
+bool swipeLeft(Sensor *sensor, int start_thresh=101, int end_thresh=1000) {
   return detectHorizontalSwipe(sensor, SWIPE_LEFT, start_thresh, end_thresh);
 }
 
@@ -142,13 +155,22 @@ bool swipeDown(Sensor *sensor, int start_thresh=200, int end_thresh=1000) {
 /**
  * Initialize the sensors - Fictional numbers
  */
+ /*
+  * S/W Mapping -> Layout
+  * 0->4
+  * 1->3
+  * 2->2
+  * 3->1
+  * 4->6
+  * 5->5
+  */
 Sensor sensor[] = {
-	Sensor(4,2),
-  Sensor(6,4),
-  Sensor(8,6),
-  Sensor(10,8),
-  Sensor(12,10),
-  Sensor(14,10),
+	Sensor(11,A6,400,175),
+  Sensor(11,A5,300,150),
+  Sensor(11,A4,300,150),
+  Sensor(11,A3,250,150),
+  Sensor(11,A7,300,200),
+  Sensor(11,8,400,150),
 };
 
 int size = (sizeof(sensor)/sizeof(*sensor));
@@ -169,12 +191,12 @@ void loop()
 		 else if (sensor[i].longTap())
 			 Serial.println("longTap detected");
 	}
-  if (swipeUP(sensor))
-    Serial.println("SwipeUp detected");
-  else if (swipeDown(sensor))
-    Serial.println("SwipeDown detected");
-  else if (swipeLeft(sensor))
+  // if (swipeUP(sensor))
+  //   Serial.println("SwipeUp detected");
+  // else if (swipeDown(sensor))
+  //   Serial.println("SwipeDown detected");
+  if (swipeLeft(sensor))
     Serial.println("SwipeLeft detected");
-  else if (swipeRight(sensor))
-    Serial.println("SwipeRight detected");
+  // else if (swipeRight(sensor))
+  //   Serial.println("SwipeRight detected");
 }
