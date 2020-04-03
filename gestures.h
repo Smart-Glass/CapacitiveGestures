@@ -3,6 +3,11 @@
 
 #include <CapacitiveSensor.h>
 
+/**
+ * Timeout after which a decision is made on the gesture
+ */
+#define GESTURE_TIMEOUT	500
+
 #define MAX_GESTURES 6
 
 /**
@@ -22,6 +27,10 @@
 #define SWIPE_UP    0x4
 #define SWIPE_DOWN  0x5
 
+#define SWIPE_LEFT_BIT  12
+#define SWIPE_RIGHT_BIT 13
+#define SWIPE_UP_BIT    14
+#define SWIPE_DOWN_BIT  15
 /**
  * Classifes gestures into their own buckets while keeping track of metadeta
  * start_time: the time gesture is started

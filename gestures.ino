@@ -11,14 +11,18 @@ Sensor sensor[] = {
 };
 
 int size = (sizeof(sensor) / sizeof( * sensor));
-bool tap_arr[5] = {false};
-bool swipe_left = false;
-bool swipe_right = false;
-bool swipe_up = false;
-bool swipe_down = false;
-bool long_tap = false;
 long start_time = 0;
-
+/*
+ *
+ * Bitmask to house gestures
+ * Bits 0-5  = taps
+ * Bits 6-11 = long taps
+ * Bit 12    = swipe left
+ * Bit 13    = swipe right
+ * Bit 14    = swipe up
+ * Bit 15    = swipe down
+ */
+uint16_t g_mask = 0x0;
 
 void setup() {
 	Serial.begin(9600);
@@ -30,47 +34,45 @@ void loop() {
 
 	for (int i = 0; i < size; i++) {
 		if (sensor[i].tap()) {
-			tap_arr[i] = true;
+			bitSet(g_mask, i);
 			start_time = millis();
 		} else if (sensor[i].longTap()) {
-			long_tap = true;
+			bitSet(g_mask, i + 6);
 			start_time = millis();
 		}
 	}
 	if (swipeUP(sensor))
-		swipe_up = true;
+		bitSet(g_mask, SWIPE_UP_BIT);
 	else if (swipeDown(sensor))
-		swipe_down = true;
+		bitSet(g_mask, SWIPE_DOWN_BIT);
 	if (swipeLeft(sensor))
-		swipe_left = true;
+		bitSet(g_mask, SWIPE_LEFT_BIT);
 	else if (swipeRight(sensor))
-		swipe_right = true;
-	if (start_time && millis() - start_time > 500) {
-		if (swipe_left) {
+		bitSet(g_mask, SWIPE_RIGHT_BIT);
+
+	if (start_time && millis() - start_time > GESTURE_TIMEOUT) {
+		if (bitRead(g_mask, SWIPE_LEFT_BIT)) {
 			Serial.println("Swipe left");
-			swipe_left = false;
-		} else if (swipe_right) {
+		} else if (bitRead(g_mask, SWIPE_RIGHT_BIT)) {
 			Serial.println("Swipe right");
-			swipe_right = false;
-		} else if (swipe_up) {
+		} else if (bitRead(g_mask, SWIPE_UP_BIT)) {
 			Serial.println("Swipe up");
-			swipe_up = false;
-		} else if (swipe_down) {
+		} else if (bitRead(g_mask, SWIPE_DOWN_BIT)) {
 			Serial.println("Swipe down");
-			swipe_down = false;
-		} else if (long_tap) {
-			Serial.println("long tap");
-			long_tap = false;
 		} else {
 			for (int i = 0; i < size; i++) {
-				if (tap_arr[i]) {
+				if (bitRead(g_mask, i + 6)) {
+					Serial.print("Long Tap");
+					Serial.println(i);
+					break;
+				} else if (bitRead(g_mask, i)) {
 					Serial.print("Tap");
 					Serial.println(i);
 					break;
 				}
 			}
 		}
-		memset(tap_arr, 0, sizeof(tap_arr));
+		g_mask = 0;
 		start_time = 0;
 	}
 }

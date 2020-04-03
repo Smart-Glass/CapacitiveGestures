@@ -1,7 +1,0 @@
-{
-    "programmer": "AVRISP mkII",
-    "board": "SparkFun:avr:promicro",
-    "configuration": "cpu=8MHzatmega32U4",
-    "port": "COM8",
-    "sketch": "capacitiveSensing.ino"
-}
